@@ -2,12 +2,13 @@ import { listOfWordsWithFreq, actualWordleWordsList } from "./data.js";
 import { writeFileSync } from "node:fs";
 
 const listOfWords = Object.keys(listOfWordsWithFreq);
-console.log(listOfWords);
+// console.log(listOfWords);
 
 const medianFreq = median(Object.values(listOfWordsWithFreq));
-
+console.log(medianFreq);
 function median(list) {
-  const sorted = Array.from(list).sort((a, b) => a[1] - b[1]);
+  //   console.log(list);
+  const sorted = Array.from(list).sort((a, b) => a - b);
   const middle = Math.floor(sorted.length / 2);
 
   if (sorted.length % 2 === 0) {
@@ -87,24 +88,26 @@ function expectedWordEfficiency(wordList, word) {
     ? -(1 / len) * Math.log2(1 / len)
     : 0;
 
-  //   console.log(totalInfo, expectedFreqEntropy);
+  //   console.log(word, totalInfo, expectedFreqEntropy);
   //   console.log(totalInfo + expectedFreqEntropy);
   return totalInfo + expectedFreqEntropy;
 }
 function findBestWord(wordList) {
-  let maxWord = [];
-  for (let i = 0; i < wordList.length; i++) {
-    const word = wordList[i];
-    const totalInfo = expectedWordEfficiency(wordList, word);
-    if (maxWord.length > 0) {
-      if (totalInfo > maxWord[0]) {
-        maxWord = [totalInfo, word];
-      }
-    } else {
-      maxWord = [totalInfo, word];
-    }
+  if (wordList.length == 0) {
+    console.error("List is empty");
+    return;
   }
-  return maxWord;
+  if (wordList.length == 1) {
+    return [0, wordList[0]];
+  }
+  return wordList.reduce(
+    (maxWord, word) => {
+      const totalInfo = expectedWordEfficiency(wordList, word);
+      //   console.log(`Word: ${word}, Info: ${totalInfo}`);
+      return totalInfo > maxWord[0] ? [totalInfo, word] : maxWord;
+    },
+    [0, null]
+  );
 }
 
 let guesses = [];
@@ -115,7 +118,7 @@ function playWordle(currrentTurns, inputWord, wordList, actualWord) {
     console.log("Guessed word in ", currrentTurns, " attempts");
     return currrentTurns;
   }
-
+  //   console.log(inputWord);
   const pattern = generatePattern(inputWord, actualWord);
 
   const newWordList = wordList.filter((word) =>
