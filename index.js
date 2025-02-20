@@ -75,6 +75,7 @@ function generatePattern(inputWord, actualWord) {
 
 function matchesPattern(wordToCheck, patternToCheck, referenceWord) {
   const actualPattern = generatePattern(wordToCheck, referenceWord);
+  //   console.log(actualPattern, patternToCheck, wordToCheck);
   return patternToCheck.toString() === actualPattern.toString();
 }
 function isWordFrequent(word) {
@@ -120,7 +121,6 @@ function playWordle(currrentTurns, inputWord, wordList, actualWord) {
   }
   //   console.log(inputWord);
   const pattern = generatePattern(inputWord, actualWord);
-
   const newWordList = wordList.filter((word) =>
     matchesPattern(inputWord, pattern, word)
   );
@@ -131,9 +131,10 @@ function playWordle(currrentTurns, inputWord, wordList, actualWord) {
 const startingWord = "tares";
 
 function testAllPreviousWordleWords(startingWord) {
+  const list = actualWordleWordsList;
   const modelData = [];
-  for (let i = 0; i < actualWordleWordsList.length; i++) {
-    const actualWord = actualWordleWordsList[i];
+  for (let i = 0; i < list.length; i++) {
+    const actualWord = list[i];
     const score = playWordle(1, startingWord, listOfWords, actualWord);
     console.log(guesses);
     guesses = [];
