@@ -73,8 +73,11 @@ function generatePattern(inputWord, actualWord) {
       actualLetterCounts[inputWordArray[i]]--; // Reduce available count
     }
   }
-
-  patternCache.set(key, pattern);
+  const cacheSize = patternCache.size;
+  if (cacheSize < 2 ** 24) {
+    patternCache.set(key, pattern);
+  }
+  // console.log(cacheSize, 2 ** 20)
   return pattern;
 }
 
@@ -150,7 +153,7 @@ function testWordleWords(startingWord, list) {
   for (let i = 0; i < list.length; i++) {
     const actualWord = list[i];
     const [score, guesses] = playWordle(startingWord, listOfWords, actualWord);
-    console.log(guesses);
+    console.log(guesses, patternCache.size);
     const result = `${actualWord},${score}\n`;
 
     // Append each result immediately to the CSV file
@@ -162,7 +165,7 @@ function testWordleWords(startingWord, list) {
   }
 }
 
-const slicedList = actualWordleWordsList.slice(179);
+const slicedList = actualWordleWordsList.slice(263);
 console.log(slicedList[0]);
 testWordleWords(startingWord, slicedList);
 // const [score, guesses] = playWordle(startingWord, listOfWords, "liver");
