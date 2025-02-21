@@ -1,8 +1,9 @@
 import { listOfWordsWithFreq, actualWordleWordsList } from "./data.js";
 import { writeFileSync } from "node:fs";
+import fs from "node:fs";
 
 const listOfWords = Object.keys(listOfWordsWithFreq);
-// console.log(listOfWords);
+console.log(listOfWords);
 
 const medianFreq = median(Object.values(listOfWordsWithFreq));
 console.log(medianFreq);
@@ -43,7 +44,10 @@ function patternProbability(wordList, pattern, inputWord) {
   return numberOfWordsByPattern / totalWords;
 }
 
+const patternCache = new Map();
 function generatePattern(inputWord, actualWord) {
+  const key = `${inputWord}-${actualWord}`;
+  if (patternCache.has(key)) return patternCache.get(key);
   if (inputWord.length !== 5 || actualWord.length !== 5) return false;
   let inputWordArray = inputWord.split("");
   let actualWordArray = actualWord.split("");
@@ -70,6 +74,7 @@ function generatePattern(inputWord, actualWord) {
     }
   }
 
+  patternCache.set(key, pattern);
   return pattern;
 }
 
@@ -78,15 +83,16 @@ function matchesPattern(wordToCheck, patternToCheck, referenceWord) {
   //   console.log(actualPattern, patternToCheck, wordToCheck);
   return patternToCheck.toString() === actualPattern.toString();
 }
-function isWordFrequent(word) {
-  return listOfWordsWithFreq[word] > medianFreq;
+function wordFreq(word) {
+  return listOfWordsWithFreq[word];
 }
 function expectedWordEfficiency(wordList, word) {
   const totalInfo = totalWordInformation(wordList, word);
-  const isWordFrequentEnough = isWordFrequent(word);
+  const wordFrequency = wordFreq(word);
+  const isWordFrequentEnough = wordFrequency > medianFreq;
   const len = wordList.length;
   const expectedFreqEntropy = isWordFrequentEnough
-    ? -(1 / len) * Math.log2(1 / len)
+    ? -(1 / len) * Math.log2(1 / len) * Math.exp(wordFrequency)
     : 0;
 
   //   console.log(word, totalInfo, expectedFreqEntropy);
@@ -111,40 +117,54 @@ function findBestWord(wordList) {
   );
 }
 
-let guesses = [];
-function playWordle(currrentTurns, inputWord, wordList, actualWord) {
-  guesses.push(inputWord);
+function playWordle(inputWord, wordList, actualWord) {
+  let guesses = [];
+  function playTurn(currrentTurns, inputWord, wordList, actualWord) {
+    guesses.push(inputWord);
 
-  if (inputWord == actualWord) {
-    console.log("Guessed word in ", currrentTurns, " attempts");
-    return currrentTurns;
+    if (inputWord == actualWord) {
+      console.log("Guessed word in ", currrentTurns, " attempts");
+      return currrentTurns;
+    }
+    //   console.log(inputWord);
+    const pattern = generatePattern(inputWord, actualWord);
+    const newWordList = wordList.filter((word) =>
+      matchesPattern(inputWord, pattern, word)
+    );
+    const newInputWord = findBestWord(newWordList)[1];
+    return playTurn(currrentTurns + 1, newInputWord, newWordList, actualWord);
   }
-  //   console.log(inputWord);
-  const pattern = generatePattern(inputWord, actualWord);
-  const newWordList = wordList.filter((word) =>
-    matchesPattern(inputWord, pattern, word)
-  );
-  const newInputWord = findBestWord(newWordList)[1];
-  return playWordle(currrentTurns + 1, newInputWord, newWordList, actualWord);
+  const score = playTurn(1, inputWord, wordList, actualWord);
+  return [score, guesses];
 }
 
 const startingWord = "tares";
+function testWordleWords(startingWord, list) {
+  const csvFile = "modelAccuracy2.csv";
 
-function testAllPreviousWordleWords(startingWord) {
-  const list = actualWordleWordsList;
-  const modelData = [];
-  for (let i = 0; i < list.length; i++) {
-    const actualWord = list[i];
-    const score = playWordle(1, startingWord, listOfWords, actualWord);
-    console.log(guesses);
-    guesses = [];
-    modelData.push({ numTurns: score, word: actualWord });
+  // Ensure CSV file has headers if it doesn't exist
+  if (!fs.existsSync(csvFile)) {
+    fs.writeFileSync(csvFile, "word,numTurns\n");
   }
 
-  writeFileSync("modelAccuracy.json", JSON.stringify(modelData));
+  for (let i = 0; i < list.length; i++) {
+    const actualWord = list[i];
+    const [score, guesses] = playWordle(startingWord, listOfWords, actualWord);
+    console.log(guesses);
+    const result = `${actualWord},${score}\n`;
+
+    // Append each result immediately to the CSV file
+    try {
+      fs.appendFileSync(csvFile, result);
+    } catch (error) {
+      console.error("Error appending to CSV file:", error);
+    }
+  }
 }
 
-// playWordle(1, startingWord, listOfWords, "allow");
+const slicedList = actualWordleWordsList.slice(179);
+console.log(slicedList[0]);
+testWordleWords(startingWord, slicedList);
+// const [score, guesses] = playWordle(startingWord, listOfWords, "liver");
 // console.log(guesses);
-testAllPreviousWordleWords(startingWord);
-// console.log(matchesPattern('zjktk', [1, 0, 0, 0, 0], ''));
+// console.log(matchesPattern("zjktk", [1, 0, 0, 0, 0], ""));
